@@ -4,10 +4,13 @@ import { HERO_ZOOM, VIDEO_URL } from '../config'
 /**
  * Scrubs a background clip with page scroll.
  *
- * Strategy: try to pre-decode the clip into a set of `ImageBitmap` frames and
- * paint the one matching scroll progress onto a canvas (smooth, no per-frame
- * seeking). If decoding fails (CORS / codec), fall back to seeking the raw
- * <video> element directly.
+ * Primary path: pre-decode the clip into `ImageBitmap` frames and paint the one
+ * matching scroll progress onto a canvas (smooth scrub, no per-frame seeking).
+ *
+ * Fallback: where that decode isn't supported — notably iOS Safari, which lacks
+ * `createImageBitmap` from a <video> — autoplay the muted clip on a loop so the
+ * hero shows moving footage instead of a static poster. Desktop/Android always
+ * take the canvas path, so this fallback never affects the scroll scrub there.
  */
 export function useScrollVideo(
   canvasRef: RefObject<HTMLCanvasElement | null>,
@@ -23,9 +26,9 @@ export function useScrollVideo(
     let frames: ImageBitmap[] = []
     let framesReady = false
     let lastFrameIndex = -1
-    let videoSeeking = false
     let rafId = 0
     let cancelled = false
+    let playFallbackStarted = false
 
     const resizeCanvas = () => {
       const dpr = Math.min(devicePixelRatio, 2)
@@ -71,26 +74,30 @@ export function useScrollVideo(
     }
 
     const tick = () => {
-      const progress = getProgress()
       if (framesReady && frames.length > 0) {
+        const progress = getProgress()
         const idx = Math.round(progress * (frames.length - 1))
         if (idx !== lastFrameIndex) {
           lastFrameIndex = idx
           const frame = frames[idx]
           if (frame) drawFrame(frame)
         }
-      } else if (
-        videoEl.duration &&
-        isFinite(videoEl.duration) &&
-        videoEl.readyState >= 1
-      ) {
-        const target = progress * videoEl.duration
-        if (!videoSeeking && Math.abs(videoEl.currentTime - target) > 0.001) {
-          videoSeeking = true
-          videoEl.currentTime = target
-        }
       }
       rafId = requestAnimationFrame(tick)
+    }
+
+    /** iOS / no-createImageBitmap path: loop the muted clip as a moving background. */
+    const startPlayFallback = () => {
+      if (playFallbackStarted || cancelled || framesReady) return
+      playFallbackStarted = true
+      videoEl.loop = true
+      videoEl.muted = true
+      const p = videoEl.play()
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {
+          /* autoplay blocked — the poster stays visible */
+        })
+      }
     }
 
     const extractFrames = async () => {
@@ -150,29 +157,17 @@ export function useScrollVideo(
         if (!cancelled && frames.length > 0) {
           framesReady = true
           canvas.style.visibility = 'visible'
+          videoEl.pause()
           videoEl.style.display = 'none'
         }
         URL.revokeObjectURL(objectUrl)
       } catch {
-        /* fall back to live <video> seeking */
+        // Decode/seek unsupported (iOS) → play the clip on a loop instead.
+        startPlayFallback()
       }
     }
 
-    const onVideoSeeked = () => {
-      videoSeeking = false
-    }
-    const onVideoStalled = () => {
-      videoSeeking = false
-    }
-    const onVideoLoadedData = () => {
-      videoEl.currentTime = 0
-    }
-
-    videoEl.addEventListener('seeked', onVideoSeeked)
-    videoEl.addEventListener('stalled', onVideoStalled)
-    videoEl.addEventListener('loadeddata', onVideoLoadedData)
     canvas.style.visibility = 'hidden'
-
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
     rafId = requestAnimationFrame(tick)
@@ -182,9 +177,6 @@ export function useScrollVideo(
       cancelled = true
       cancelAnimationFrame(rafId)
       window.removeEventListener('resize', resizeCanvas)
-      videoEl.removeEventListener('seeked', onVideoSeeked)
-      videoEl.removeEventListener('stalled', onVideoStalled)
-      videoEl.removeEventListener('loadeddata', onVideoLoadedData)
       frames.forEach((f) => f.close())
       frames = []
     }
