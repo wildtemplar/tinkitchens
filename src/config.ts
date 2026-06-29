@@ -1,6 +1,13 @@
 /** Source clip used for the scroll-scrubbed background (served from /public). */
 export const VIDEO_URL = '/cabin-hero.mp4'
 
+/**
+ * Static first-frame still shown as the hero fallback. Critical for iOS Safari,
+ * where canvas frame-extraction (createImageBitmap from video) isn't supported,
+ * so the <video> poster is what users actually see.
+ */
+export const HERO_POSTER_URL = '/hero-poster.jpg'
+
 /** Anchor id of the empty zone that drives the fixed-cards reveal. */
 export const CARDS_TRIGGER_ID = 'cards-trigger'
 
