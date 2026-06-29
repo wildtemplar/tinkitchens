@@ -19,7 +19,7 @@ export function ScrollVideo() {
         ref={videoRef}
         muted
         playsInline
-        preload="auto"
+        preload="none"
         crossOrigin="anonymous"
         src={VIDEO_URL}
         poster={HERO_POSTER_URL}
