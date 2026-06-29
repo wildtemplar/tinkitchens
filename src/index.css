@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #2c5c88;
+  --color-brand-light: #3a7aad;
+  /* Logo amber — used for the primary CTA + headline accent. */
+  --color-accent: #ffb020;
+  --color-accent-dark: #e8970c;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  background: #010101;
+  color: #fff;
+  font-family: var(--font-sans);
+}
+
+/* Silver gradient display heading used across the appended sections. */
+.gradient-heading {
+  background: linear-gradient(180deg, #646973 0%, #bbccd7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Amber gradient pill (primary CTA) tuned to the live accent token. */
+.btn-amber-gradient {
+  background: linear-gradient(123deg, #3a2606 6%, #ffb020 45%, #e8970c 74%, #ffc24d 100%);
+}
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  padding: 1rem 2.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  color: #fff;
+  border: 0;
+  transition: transform 0.2s, filter 0.2s, background 0.2s;
+}
+.btn-pill.grad {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+  box-shadow: 0 4px 4px rgba(232, 151, 12, 0.25),
+    4px 4px 12px rgba(232, 151, 12, 0.55) inset;
+}
+.btn-pill.grad:hover {
+  filter: brightness(1.06);
+}
+.btn-pill.ghost {
+  border: 2px solid #d7e2ea;
+  color: #d7e2ea;
+  background: transparent;
+}
+.btn-pill.ghost:hover {
+  background: rgba(215, 226, 234, 0.1);
+}
